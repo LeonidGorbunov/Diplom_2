@@ -4,7 +4,7 @@ import org.junit.Before;
 import ru.education_services.qa_stellarburgers.client.OrderClient;
 import ru.education_services.qa_stellarburgers.client.UserClient;
 
-public class BaseTest {
+public abstract class BaseTest {
 
     protected UserClient userClient;
     protected OrderClient orderClient;
