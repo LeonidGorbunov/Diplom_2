@@ -2,13 +2,14 @@ package ru.education_services.qa_stellarburgers.tests;
 
 import io.qameta.allure.*;
 import io.restassured.response.Response;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import ru.education_services.qa_stellarburgers.data.UserDataGenerator;
 import ru.education_services.qa_stellarburgers.models.request.UserRegisterRequest;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("1. Регистрация нового пользователя, эндпоинт post /api/auth/register")
@@ -64,21 +65,17 @@ public class UserRegisterParametrizedNegativeTest extends BaseTest {
         accessToken = response.path("accessToken");
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 403!", 403, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "Email, password and name are required fields", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_FORBIDDEN)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("Email, password and name are required fields")));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
     }
 }

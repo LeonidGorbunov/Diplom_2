@@ -9,7 +9,8 @@ import org.junit.Test;
 import ru.education_services.qa_stellarburgers.data.UserDataGenerator;
 import ru.education_services.qa_stellarburgers.models.request.UserLoginRequest;
 import ru.education_services.qa_stellarburgers.models.request.UserRegisterRequest;
-import static org.junit.Assert.*;
+import org.apache.http.HttpStatus;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("2. Авторизация пользователя, эндпоинт post /api/auth/login")
@@ -37,10 +38,12 @@ public class UserLoginNegativeTest extends BaseTest {
         Response response = userClient.actionUserLogin(loginRequest);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 401!", 401, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "email or password are incorrect", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_UNAUTHORIZED)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("email or password are incorrect")));
         });
     }
 
@@ -54,21 +57,17 @@ public class UserLoginNegativeTest extends BaseTest {
         Response response = userClient.actionUserLogin(loginRequest);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 401!", 401, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "email or password are incorrect", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_UNAUTHORIZED)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("email or password are incorrect")));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
-   }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
+    }
 }

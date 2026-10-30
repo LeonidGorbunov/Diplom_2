@@ -10,7 +10,8 @@ import ru.education_services.qa_stellarburgers.data.UserDataGenerator;
 import ru.education_services.qa_stellarburgers.models.request.OrderCreateRequest;
 import java.util.Arrays;
 import java.util.List;
-import static org.junit.Assert.*;
+import org.apache.http.HttpStatus;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("3. Создание заказа, эндпоинт post /api/orders")
@@ -38,21 +39,17 @@ public class OrderCreatePositiveTest extends BaseTest {
         Response response = orderClient.actionOrderCreate(orderRequest, accessToken);
 
         Allure.step("Проверка контракта и тела успешного ответа", () -> {
-            assertEquals("Статус-код ответа не 200!", 200, response.getStatusCode());
-            assertTrue("Флаг \"success\" в ответе не true!", response.path("success"));
-            assertTrue("Поле \"order.number\" в ответе отсутствует или не является целым числом!", response.path("order.number") instanceof Integer);
-            assertNotNull("В ответе отсутствует или не заполнено название бургера (поле \"name\")!", response.path("name"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_OK)
+                    .body("success", describedAs("Флаг \"success\" в ответе не true!", is(true)))
+                    .body("order.number", describedAs("Поле \"order.number\" в ответе отсутствует или не является целым числом!", instanceOf(Integer.class)))
+                    .body("name", describedAs("В ответе отсутствует или не заполнено название бургера (поле \"name\")!", notNullValue()));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
     }
 }

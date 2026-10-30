@@ -12,7 +12,8 @@ import ru.education_services.qa_stellarburgers.models.request.OrderCreateRequest
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import static org.junit.Assert.*;
+import org.apache.http.HttpStatus;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("3. Создание заказа, эндпоинт post /api/orders")
@@ -40,10 +41,12 @@ public class OrderCreateNegativeTest extends BaseTest {
         Response response = orderClient.actionOrderCreate(validOrderRequest, null);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 401!", 401, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "You should be authorized", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_UNAUTHORIZED)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("You should be authorized")));
         });
     }
 
@@ -58,10 +61,12 @@ public class OrderCreateNegativeTest extends BaseTest {
         Response response = orderClient.actionOrderCreate(emptyOrderRequest, accessToken);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 400!", 400, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "Ingredient ids must be provided", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_BAD_REQUEST)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("Ingredient ids must be provided")));
         });
     }
 
@@ -78,10 +83,12 @@ public class OrderCreateNegativeTest extends BaseTest {
         Response response = orderClient.actionOrderCreate(orderRequestWithNonExistentIngredients, accessToken);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 400!", 400, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "One or more ids provided are incorrect", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_BAD_REQUEST)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("One or more ids provided are incorrect")));
         });
     }
 
@@ -96,21 +103,17 @@ public class OrderCreateNegativeTest extends BaseTest {
         Response response = orderClient.actionOrderCreate(invalidFormatRequest, accessToken);
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 400!", 400, response.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", response.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "One or more ids provided are incorrect", response.path("message"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_BAD_REQUEST)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("One or more ids provided are incorrect")));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
     }
 }

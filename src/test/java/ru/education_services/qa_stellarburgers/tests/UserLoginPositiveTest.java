@@ -9,7 +9,8 @@ import org.junit.Test;
 import ru.education_services.qa_stellarburgers.data.UserDataGenerator;
 import ru.education_services.qa_stellarburgers.models.request.UserLoginRequest;
 import ru.education_services.qa_stellarburgers.models.request.UserRegisterRequest;
-import static org.junit.Assert.*;
+import org.apache.http.HttpStatus;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("2. Авторизация пользователя, эндпоинт post /api/auth/login")
@@ -36,23 +37,19 @@ public class UserLoginPositiveTest extends BaseTest {
         Response response = userClient.actionUserLogin(loginRequest);
 
         Allure.step("Проверка контракта и тела успешного ответа", () -> {
-            assertEquals("Статус-код ответа не 200!", 200, response.getStatusCode());
-            assertTrue("Флаг \"success\" в ответе не true!", response.path("success"));
-            assertNotNull("Поле \"accessToken\" отсутствует в ответе или равно null!", response.path("accessToken"));
-            assertNotNull("Поле \"refreshToken\" отсутствует в ответе или равно null!", response.path("refreshToken"));
-            assertEquals("Поле email в ответе не совпадает с отправленным!", loginRequest.getEmail(), response.path("user.email"));
-            assertEquals("Поле name в ответе не совпадает с отправленным при регистрации!", userRequest.getName(), response.path("user.name"));
+            response.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_OK)
+                    .body("success", describedAs("Флаг \"success\" в ответе не true!", is(true)))
+                    .body("accessToken", describedAs("Поле \"accessToken\" отсутствует в ответе или равно null!", notNullValue()))
+                    .body("refreshToken", describedAs("Поле \"refreshToken\" отсутствует в ответе или равно null!", notNullValue()))
+                    .body("user.email", describedAs("Поле email в ответе не совпадает с отправленным!", equalTo(loginRequest.getEmail())))
+                    .body("user.name", describedAs("Поле name в ответе не совпадает с отправленным при регистрации!", equalTo(userRequest.getName())));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
     }
 }

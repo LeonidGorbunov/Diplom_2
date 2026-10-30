@@ -8,7 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 import ru.education_services.qa_stellarburgers.data.UserDataGenerator;
 import ru.education_services.qa_stellarburgers.models.request.UserRegisterRequest;
-import static org.junit.Assert.*;
+import org.apache.http.HttpStatus;
+import static org.hamcrest.Matchers.*;
 
 @Epic("Stellar Burgers")
 @Feature("1. Регистрация нового пользователя, эндпоинт post /api/auth/register")
@@ -36,28 +37,18 @@ public class UserRegisterNegativeTest extends BaseTest {
         accessTokenDuplicate = duplicateResponse.path("accessToken");
 
         Allure.step("Проверка контракта и тела ответа", () -> {
-            assertEquals("Статус-код ответа не 403!", 403, duplicateResponse.getStatusCode());
-            assertFalse("Флаг \"success\" в ответе не false!", duplicateResponse.path("success"));
-            assertEquals("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
-                    "User already exists", duplicateResponse.path("message"));
+            duplicateResponse.then()
+                    .assertThat()
+                    .statusCode(HttpStatus.SC_FORBIDDEN)
+                    .body("success", describedAs("Флаг \"success\" в ответе не false!", is(false)))
+                    .body("message", describedAs("Текст поля \"message\" в ответе не совпадает с ожидаемым!",
+                            equalTo("User already exists")));
         });
     }
 
     @After
     public void tearDown() {
-        if (accessToken != null) {
-            try {
-                userClient.actionUserDelete(accessToken);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить пользователя после теста: " + e.getMessage());
-            }
-        }
-        if (accessTokenDuplicate != null) {
-            try {
-                userClient.actionUserDelete(accessTokenDuplicate);
-            } catch (Exception e) {
-                System.out.println("Не удалось удалить дубликат пользователя после теста: " + e.getMessage());
-            }
-        }
+        apiUserTeardownSteps.deleteUserSafely(accessToken);
+        apiUserTeardownSteps.deleteUserSafely(accessTokenDuplicate);
     }
 }
